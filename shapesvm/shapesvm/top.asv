@@ -1,0 +1,176 @@
+clc
+clear all
+close all
+warning off all
+
+fontSize = 20;
+[fullFileName pathname] = uigetfile('*.*','select an img');
+
+ipi = (imread([pathname,fullFileName]));
+
+figure,imshow(ipi);
+title('QUERY IMAGE');
+[r c fo]=size(ipi);
+
+if(fo==3)
+    grimg=rgb2gray(ipi);
+
+else
+    grimg=ipi;
+end
+
+figure,imshow(grimg);
+title('GRAY IMAGE');
+
+rimg=imresize(grimg,[200 200])
+
+figure,imshow(rimg);
+title('RESIZED IMAGE');
+
+
+
+h = imfreehand; 
+position = round(wait(h));
+min_values = min(position,[],1);
+max_values = max(position,[],1);
+
+Inew = rimg(min_values(2):max_values(2),min_values(1):max_values(1),:);
+filtimg=rimg(
+figure,imshow(Inew);
+title('cropped image');
+i = 1;
+finished = 'NO';
+i = 1;
+while strcmpi(finished,'NO')
+  
+  finished = questdlg('Finished?', ...
+      'confirmation', ...
+      'YES', 'NO', 'UNDO', 'NO');
+  if strcmpi(finished, 'UNDO')
+      delete(hFH(i))
+      finished = 'NO';
+ 
+  end
+end
+
+
+
+m=3;
+n=3;
+
+filtimg1 = averagefilter(rimg, [m n]);
+figure,
+imshow(filtimg1)
+title('filtered image');
+
+[rows columns]=size(5);
+
+
+[c, r] = meshgrid(1:rows, 1:columns);
+calibrationFactor = 0.25;  % There are 0.25 real world units per index.
+distances = sqrt((c-1).^2 + (r-1).^2) * calibrationFactor;
+% Round it to the nearest single unit (nearest 4 pixel)
+distances = round(distances);
+% Add 1 so we can use that as indexes in accumarray
+distances = distances + 1;
+% Now get sum of intensity at each distance
+%out = accumarray(distances(:), filtimg(:));
+
+out = accumarray(Inew(:),filtimg(:));
+
+figure,subplot(1, 2, 2);
+plot(out, 'b-', 'LineWidth', 3);
+grid on;
+xlabel('Distance', 'FontSize', fontSize);
+ylabel('Sum of gray levels', 'FontSize', fontSize);
+title('GL sum vs. distance', 'FontSize', fontSize, 'Interpreter', 'None');
+
+rho=0.35;
+
+bmd=out*rho;
+
+fbmd=sum(bmd);
+
+
+bmdf=fbmd/10^05;
+
+
+disp(bmdf);
+if(bmdf>1)
+   di=0;
+    warndlg('Normal');
+end
+if(bmdf<1)
+   
+    warndlg('Osteopenia');di=1;
+end
+
+if(di==1 || di==0)
+    I1=ipi;
+ figure,imshow(I1)
+title('IMAGE TO BE MATCHED') 
+Z=rgb2gray(I1);
+figure,imhist(Z);
+zop=histeq(Z);
+figure,imhist(zop);
+figure,imshow(zop)
+title('after enhancing')
+
+mu1 = gtex(I1); 
+
+% ----------------------------------------------------------------------- %
+dd1 = zeros(1,7);
+for i = 1:7
+    filename = num2str(i);
+    filename = ['img' filename];
+    filename = [filename '.jpg'];
+    filename = [cd '\db\' filename];
+    I2 = imread(filename);
+    mu2 = gtex(I2);    
+    dd1(i) = dist1(mu1,mu2);                      
+end
+% ----------------------------------------------------------------------- %
+M1 = sort(dd1,'ascend');
+Th = 120;
+if M1(1)<= Th  
+    M2 = M1(1);    
+    for i = 1:length(dd1)
+        if M2 == dd1(i)
+            M3 = i;
+        end
+    end        
+    filename = num2str(M3);
+    filename = ['img' filename];
+    filename = [filename '.jpg'];
+    filename = [cd '\db\' filename];
+    I = imread(filename);
+    figure,imshow(I);
+    title('DATABASE IMAGE') 
+else
+ end    
+
+if(M3==1)
+    pe=imread('per1.jpg');
+   figure,imshow(pe); 
+   
+   send_mail_message('syamalan14578','from ABC','NO disease','etab.txt');
+    end
+
+if(M3==2)
+    pe=imread('per2.jpg');
+   figure,imshow(pe); 
+   
+   send_mail_message('syamalan14578','from ABC','NO disease','etab.txt');
+    end
+
+if(M3==3)
+    pe=imread('per3.jpg');
+   figure,imshow(pe); 
+   
+   send_mail_message('syamalan14578','from ABC','You have disease','tab.txt');
+    end
+
+
+   
+    
+end
